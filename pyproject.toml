@@ -38,6 +38,7 @@ nav = [
     ]},
     {"State & Roadmap" = "state.md"},
     {"Contributing" = "contributing.md"},
+    {"Privacy Policy" = "privacy.md"},
 ]
 [project.markdown_extensions.admonition]
 [project.markdown_extensions.pymdownx.details]
