@@ -18,7 +18,7 @@ icon: material/lock
 
 ## GitHub App secrets (`APP_ID`, `APP_PRIVATE_KEY`)
 
-Stored as repository secrets on the Hall repo. Used by `actions/create-github-app-token@v1` at the start of each dispatch job to mint a short-lived installation token scoped to the target repo owner.
+Stored as **org-level secrets** scoped to the Hall repo only (set by the relay during App installation). Used by `actions/create-github-app-token@v1` at the start of each dispatch job to mint a short-lived installation token scoped to the target repo owner.
 
 **What the installation token can do:** whatever permissions the App was granted at install time (Contents, Issues, Pull Requests R/W; Members R; Environments R/W for counter updates).
 **Lifetime:** 1 hour. Never stored; minted fresh per job.
@@ -61,7 +61,7 @@ The live agent registry is the `agents.yml` file in the Hall repo. It is checked
 
 ## Agent personas (`roster/*.md`)
 
-Each agent's character sheet lives as a Markdown file in the `roster/` directory of the Hall repo. The dispatch workflow reads the relevant file at checkout time and assembles it with `agents/automaton_base.md` into a `CLAUDE.md` for the agent's run. Personas are version-controlled alongside the rest of the codebase.
+Each agent's character sheet lives as a Markdown file in the `roster/` directory of the Hall repo. The dispatch workflow writes a two-line `CLAUDE.md` using `@`-imports pointing at `automaton_base.md` and the agent's persona — Claude Code resolves them at runtime. Personas are version-controlled alongside the rest of the codebase.
 
 ---
 
@@ -88,4 +88,6 @@ This prevents the token value from appearing in any subsequent log output, inclu
 
 ## Token management procedures
 
-Rotation and emergency procedures are in [`../key-management.md`](../key-management.md).
+**OAuth token rotation:** run `claude setup-token` again, then update the `CLAUDE_CODE_OAUTH_TOKEN` secret in your `invoker/<handle>` environment. The old token is revoked when the new one is issued.
+
+**App key rotation:** generate a new private key in the GitHub App settings (Settings → Developer settings → GitHub Apps → hall-of-automata → Private keys), update `APP_PRIVATE_KEY` in the org secrets, and delete the old key. Revocation is immediate.

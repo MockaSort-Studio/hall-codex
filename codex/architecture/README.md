@@ -75,7 +75,7 @@ graph LR
 
 **CI failure path** — a failing check suite on a `hall/*` branch triggers `hall-ci-loop.yml`. The agent is re-dispatched up to `max_retries` times before invoker escalation.
 
-**Assignment path** *(planned)* — an issue is assigned to `@hall-of-automata` without specifying an agent. Old Major runs first to triage, select the right specialist, and synthesize context.
+**Post-mortem path** — a failed or max-turns-exceeded dispatch auto-applies `hall:post-mortem` to the originating issue, triggering Old Major to analyse the failure, propose persona or tool amendments, and open a PR if applicable.
 
 ---
 
@@ -107,7 +107,7 @@ flowchart LR
     class PLANNED,P1,P2,P3 planned
 ```
 
-In all current paths: the workflow checks out the Hall repo, reads `roster/{agent}.md` and `agents/automaton_base.md`, assembles them into `CLAUDE.md` in the workspace, and runs the Claude Code Action in a pool-selected `invoker/<handle>` environment. The CLAUDE.md is never committed — the runner is ephemeral.
+In all current paths: the workflow checks out the Hall repo, builds an MCP config from `agents.yml`, writes a two-line `CLAUDE.md` with `@`-imports pointing at `agents/automaton_base.md` and `roster/{agent}.md`, and runs the Claude Code Action in a pool-selected `invoker/<handle>` environment with the agent's declared model and MCP servers. CLAUDE.md is never committed — the runner is ephemeral.
 
 ---
 

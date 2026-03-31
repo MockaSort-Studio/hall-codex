@@ -17,7 +17,7 @@ The process is automated via issue template. Old Major reviews the submission, o
 
 - [ ] Registered invoker — see [Invoker Onboarding](invoker-onboarding.md)
 - [ ] Lowercase slug chosen and confirmed absent from `agents.yml`
-- [ ] Character sheet drafted per [`agents/automaton_template.md`](../agents/automaton_template.md)
+- [ ] Character sheet drafted — use the **New Automaton** issue template, which guides you through each field
 - [ ] [Open Issue](https://github.com/MockaSort-Studio/hall-of-automata/issues/new/choose)
 
 ---
@@ -68,5 +68,15 @@ Old Major rejects and asks for clarification if any field fails:
 | `scope_summary` | One sentence optimised for Old Major's routing decision |
 
 No partial provisioning. Both files are committed in one PR or not at all.
+
+---
+
+## MCP tool provisioning
+
+As part of the provisioning PR, Old Major researches and selects MCP servers for the new agent. It queries the [MCP registry](https://registry.modelcontextprotocol.io) and [PulseMCP](https://pulsemcp.com/servers) based on the agent's declared languages, domains, and external services — not from a static list.
+
+Every agent gets `sequential-thinking` and `fetch` at minimum. Language specialists (C++, Python) also get an LSP server for diagnostics and symbol lookup. Old Major explains each server choice in the PR description. If no suitable server exists for a declared capability, the gap is noted.
+
+The resulting `mcp:` block is written into `agents.yml` alongside the persona entry.
 
 ---

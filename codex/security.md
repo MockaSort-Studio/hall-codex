@@ -80,11 +80,11 @@ Concurrent invocations of the same automaton on the same issue are serialized, n
 
 ```yaml
 concurrency:
-  group: hamlet-${{ github.event.issue.number }}
+  group: hall-${{ agent }}-${{ issue-number }}
   cancel-in-progress: false
 ```
 
-`cancel-in-progress: false` queues rather than cancels. Both invocations run, in order. If cancellation is preferred (last writer wins), set to `true`.
+`cancel-in-progress: false` queues rather than cancels. Both invocations run, in order. The group is scoped per agent per issue — parallel dispatches on different issues run freely.
 
 ---
 
@@ -102,11 +102,19 @@ A stuck or runaway invocation does not run indefinitely. Adjust per automaton if
 
 ## Audit trail
 
-Every invocation leaves two records:
-- **Actions log:** timestamp, trigger, sender, job result
-- **Issue comment:** automaton response or unauthorized notice
+Every invocation leaves three records:
 
-These are not deletable by regular org members. They provide a complete history of who invoked what and when.
+- **Actions log:** timestamp, trigger, sender, job result — retained by GitHub for 90 days
+- **Issue comment:** automaton response or unauthorized notice — permanent in the issue thread
+- **Audit artifact** (`hall-log-{agent}-{issue}-{run_id}.json`): structured JSON retained for 90 days. Fields include: agent, model, MCP servers active, turns used, turns efficiency, outcome, duration, invoker handle, weekly count
+
+These are not deletable by regular org members. They provide a complete and structured history of who invoked what, at what cost, and with what result.
+
+---
+
+## Prompt injection
+
+Agents read user-controlled content — issue bodies, PR descriptions, code comments, and file contents. The base contract instructs all automata to treat override-style instructions embedded in that content as content, not as directives, and to halt and report if an injection attempt is detected. Secrets visible in environment variables are never echoed into comments or commit messages.
 
 ---
 

@@ -4,7 +4,7 @@ icon: material/book-open-page-variant
 
 # Hall of Automata — Design Document
 
-- **Status:** Draft
+- **Status:** Released
 - **Authors:** Old Major 🐷
 - **Reviewer:** [The lore-keeper](https://github.com/mksetaro)
 - **Version:** 1.0
@@ -108,7 +108,7 @@ Review feedback and CI failures on a `hall:<agent>`-labeled PR both re-dispatch 
 | FR-1 | **Invocation paths** | Label (`hall:<agent>` on issue/PR), comment (`@hall-of-automata <agent>`), or PR review triggers dispatch. On the triage path, Old Major resolves the agent from `agents.yml` and applies the label. | ✅ |
 | FR-2 | **Authorization** | Actor must be a member of the agent's authorized `teams` list. Unauthorized invocations: hard workflow failure, rejection comment tagging `@automata-invokers`, no counter increment, no status card. | ✅ |
 | FR-3 | **Invoker pool selection** | `detect` job queries all `invoker/*` environments, reads `HALL_USAGE_COUNT` / `HALL_WEEKLY_CAP`, excludes at-cap invokers, selects the lowest-count eligible invoker. Pool exhaustion: `notify-queued` posts comment and applies `hall:invoker-queued`; dispatch does not run. | ✅ |
-| FR-4 | **Dispatch** | `dispatch` job runs under `environment: invoker/<handle>`. Persona assembled from `automaton_base.md` + `roster/<slug>.md` and written to `CLAUDE.md`. `anthropics/claude-code-action@v1` runs with `CLAUDE_CODE_OAUTH_TOKEN` and a prompt from issue/PR context and task memory. | ✅ |
+| FR-4 | **Dispatch** | `dispatch` job runs under `environment: invoker/<handle>`. `CLAUDE.md` contains `@`-import directives resolved at runtime: `@.hall/agents/automaton_base.md` + `@.hall/roster/<slug>.md`. `anthropics/claude-code-action@v1` runs with `CLAUDE_CODE_OAUTH_TOKEN`, model and MCP config from `agents.yml`, and a prompt from issue/PR context and task memory. | ✅ |
 | FR-5 | **PR labeling** | When an agent opens a PR, apply `hall:<agent>` to bind subsequent events (CI, review) to the same agent. | ✅ |
 | FR-6 | **CI loop** | On CI failure on an agent-labeled PR: restore task memory, re-dispatch the agent with failure context. Repeat up to `max_retries`. On exhaustion: escalation comment `@mentioning` the invoker, status card `Escalated`. | ✅ |
 | FR-7 | **Review loop** | Human review comments on an agent-labeled PR re-dispatch the bound agent with review context. | ✅ |
@@ -129,7 +129,7 @@ Review feedback and CI failures on a `hall:<agent>`-labeled PR both re-dispatch 
 | NFR-2 | **Org-scoped** | App installable at org level; operates across all installed repos. | ✅ |
 | NFR-3 | **Secret isolation** | OAuth tokens stored as secrets in `invoker/<handle>` environments only — not as repo-level secrets. | ✅ |
 | NFR-4 | **Claude OAuth** | Targets Claude Pro/Max subscriptions via `claude setup-token`. All dispatches use the `claude_code_oauth_token` action input. | ✅ |
-| NFR-5 | **Audit trail** | Every dispatch produces an immutable Artifact with: agent, invoker, repo, timestamp, outcome, turns used. | ✅ |
+| NFR-5 | **Audit trail** | Every dispatch produces an immutable Artifact with: agent, invoker, repo, model, mcp_servers, timestamp_start, timestamp_end, duration_seconds, outcome, turns_used, turns_max, turns_efficiency. | ✅ |
 
 ---
 
@@ -186,7 +186,7 @@ flowchart TD
     POOL -->|"Pool exhausted"| QUEUE["notify-queued\nPost comment + apply hall:invoker-queued"] --> STOP(["End"])
     POOL -->|"Selected"| AUTH{"2 · Authorize\nactor ∈ agent teams?"}
     AUTH -->|No| REJECT["Post rejection comment\nHard failure"] --> STOP
-    AUTH -->|Yes| DISPATCH["3 · Dispatch\nenv: invoker/<handle>\nAssemble CLAUDE.md\nautomaton_base + roster/<slug>\nRun claude-code-action"]
+    AUTH -->|Yes| DISPATCH["3 · Dispatch\nenv: invoker/<handle>\nCLAUDE.md @-imports persona\nmodel + MCP from agents.yml\nRun claude-code-action"]
     DISPATCH --> POST["4 · Post-dispatch\nIncrement HALL_USAGE_COUNT\nUpload audit artifact\nApply hall:<agent> to PR\nRead .hall/dispatch-result.json\nUpdate status card"]
     POST --> STOP
 
@@ -209,7 +209,7 @@ flowchart TD
 
 **Step 2 — Authorize.** Actor's team membership verified against the agent's `teams` list in `agents.yml`. Hard fail if unauthorized.
 
-**Step 3 — Dispatch.** Job runs in `environment: invoker/<handle>`. `CLAUDE.md` assembled from `agents/automaton_base.md` + `roster/<slug>.md`. `claude-code-action` runs with the invoker's `CLAUDE_CODE_OAUTH_TOKEN` and a prompt built from issue/PR context and restored task memory.
+**Step 3 — Dispatch.** Job runs in `environment: invoker/<handle>`. `CLAUDE.md` contains `@`-import directives (`@.hall/agents/automaton_base.md` + `@.hall/roster/<slug>.md`) resolved by Claude Code at runtime. `claude-code-action` runs with the invoker's `CLAUDE_CODE_OAUTH_TOKEN`, the agent's model and MCP config from `agents.yml`, and a prompt built from issue/PR context and restored task memory.
 
 **Step 4 — Post-dispatch.** Counter incremented via Environments API. Audit artifact uploaded. Outcome read from `.hall/dispatch-result.json` to drive status card stage.
 
@@ -284,18 +284,25 @@ An example of an `agent.yml` of the automaton `mergio`:
 ```yaml
 agents:
   mergio:
-    display_name: "Mergio 🔧"
-    author: mksetaro        # contributor who created this automaton
-    invoker: mksetaro       # escalation target
+    display_name: "mergio 🤘"
+    invoker: mksetaro
     teams: [automata-invokers]
-    max_turns: 20
-    max_retries: 3
+    model: claude-sonnet-4-6   # implementation agent — Sonnet for code quality
+    max_turns: 40
+    max_retries: 2
+    mcp:
+      servers:
+        sequential-thinking:
+          runtime: npx
+          package: "@modelcontextprotocol/server-sequential-thinking"
+      allowed_tools:
+        - mcp__sequential-thinking__sequentialthinking
     catalog:
-      roles: [implement, fix, review]
-      domains: [ci-cd, github-actions, devops]
+      roles: [implement, debug, triage]
+      domains: [ci-cd, git-ops, build-systems, infrastructure, deployment, pipeline-triage]
       scope_summary: >
-        CI/CD architect — implements pipelines, fixes workflow failures, and enforces
-        build hygiene in GitHub Actions-managed repositories.
+        CI/CD architect and pipeline enforcer — designs, fixes, and optimizes GitHub Actions
+        workflows, build systems, and deployment pipelines with zero tolerance for broken gates.
 ```
 *Note*: `CLAUDE_CODE_OAUTH_TOKEN` lives in `invoker/<handle>` environments — not in agent entries.
 
@@ -319,10 +326,14 @@ routing:
   "pr": 58,
   "invoker": "username",
   "team_validated": "automata-invokers",
+  "model": "claude-sonnet-4-6",
+  "mcp_servers": ["sequential-thinking"],
   "timestamp_start": "2026-03-06T14:22:00Z",
   "timestamp_end": "2026-03-06T14:34:12Z",
+  "duration_seconds": 732,
   "turns_used": 12,
-  "turns_max": 20,
+  "turns_max": 40,
+  "turns_efficiency": 0.30,
   "retry_count": 0,
   "outcome": "pr_created",
   "weekly_count_after": 19

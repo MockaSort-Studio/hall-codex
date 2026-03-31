@@ -4,81 +4,70 @@ icon: material/office-building-cog
 
 # Org-Wide Setup
 
-Provisioning a new org with issue templates and Hall labels, so any repo can invoke automata without manual configuration.
+Installing the Hall App provisions your org automatically. This page documents what the relay sets up on your behalf and what requires manual action.
 
 ---
 
-## Issue templates
+## What App installation does automatically
 
-GitHub serves community health files from the org's `.github` repository. Templates placed there appear in every repo in the org that doesn't override them with its own `ISSUE_TEMPLATE/`.
+When you install the Hall GitHub App on your org, the relay:
 
-### Create the `.github` repo (if it doesn't exist)
+1. Creates `hall-of-automata` from the operator template
+2. Creates the `automata-invokers` team
+3. Creates the `.github` repo with the Automaton Task issue template
+4. Seeds all Hall labels in `hall-of-automata`
+5. Seeds `APP_ID` and `APP_PRIVATE_KEY` as org-level secrets scoped to `hall-of-automata`
+6. Opens a welcome issue explaining next steps
 
-```bash
-gh repo create MockaSort-Studio/.github --public --description "Org-wide community health files"
-git clone https://github.com/MockaSort-Studio/.github
-cd .github && mkdir -p ISSUE_TEMPLATE
-```
-
-> **Important:** The `.github` repo *is* the `.github` folder from GitHub's perspective. Templates go in `ISSUE_TEMPLATE/` at the **repo root** — not inside a `.github/` subfolder.
-
-### Copy templates from the Hall repo
-
-```bash
-# From the cloned .github repo
-HALL=../hall-of-automata  # adjust path if needed
-
-cp $HALL/.github/ISSUE_TEMPLATE/automaton-task.yml      ISSUE_TEMPLATE/
-cp $HALL/.github/ISSUE_TEMPLATE/invoker-onboarding.yml  ISSUE_TEMPLATE/
-cp $HALL/.github/ISSUE_TEMPLATE/new-automaton.yml       ISSUE_TEMPLATE/
-
-git add . && git commit -m "add Hall issue templates org-wide" && git push
-```
-
-Templates are now available in every org repo. When a repo has its own `ISSUE_TEMPLATE/` folder, GitHub shows both sets — the org-level templates do not override repo-local ones.
+Nothing else is required to make the Hall functional in your org.
 
 ---
 
-## Labels
+## What requires manual action
 
-GitHub has no native org-wide label sync. Use the script below to create (or update) all Hall labels in one or more repos.
+### 1. Add an invoker
 
-The script lives in the Hall repo at [`deploy/scripts/setup-hall-labels.sh`](../deploy/scripts/setup-hall-labels.sh).
+Dispatch cannot run without at least one registered invoker donating Claude quota. Follow the [Invoker Onboarding](invoker-onboarding.md) process — it walks through generating the OAuth token and registering it.
 
-### Usage
+### 2. Seed labels in target repos (optional)
+
+Hall labels are seeded in `hall-of-automata` automatically. If you want to invoke automata from other repos in your org, those repos need the labels too. Use the `gh` CLI:
 
 ```bash
-# All repos in the org (excluding hall-of-automata itself)
-./deploy/scripts/setup-hall-labels.sh
-
-# Specific repos only
-./deploy/scripts/setup-hall-labels.sh MockaSort-Studio/my-project MockaSort-Studio/another-repo
+# For each target repo
+gh label create "hall:dispatch-automaton" --color "5319e7" --description "Routes to old-major for triage" --repo MockaSort-Studio/my-repo
 ```
 
-Requires `gh` CLI authenticated with a token that has `write:org` or at minimum `repo` scope on the target repos.
+Or copy the full label set from `hall-of-automata` to the target repo using the [`gh label clone`](https://cli.github.com/manual/gh_label_clone) command:
 
-### What it creates
+```bash
+gh label clone MockaSort-Studio/hall-of-automata --repo MockaSort-Studio/my-repo
+```
+
+---
+
+## Hall labels reference
 
 | Label | Color | Purpose |
 |---|---|---|
-| `hall:dispatch-automaton` | blue | Standard invocation — routes to Old Major |
-| `hall:old-major` | purple | Issue/PR bound to Old Major |
-| `hall:hamlet` | red | Issue/PR bound to Hamlet |
+| `hall:dispatch-automaton` | purple | Standard invocation — routes to Old Major |
+| `hall:old-major` | purple | Thread bound to Old Major |
+| `hall:hamlet` | purple | Thread bound to Hamlet |
+| `hall:mergio` | purple | Thread bound to mergio |
+| `hall:pyrate` | purple | Thread bound to Captain Pyrate |
+| `hall:aeeeiii` | purple | Thread bound to aeeeiii |
 | `hall:awaiting-input` | yellow | Agent waiting for invoker reply |
-| `hall:queued` | orange | All invoker quota exhausted |
-| `hall:invoker-queued` | orange | Invoker pool exhausted |
+| `hall:queued` | red | All invoker quota exhausted |
+| `hall:invoker-queued` | red | No invoker available |
 | `hall:active-invoker` | green | Registered active invoker |
-| `hall:onboard-invoker` | light blue | Invoker onboarding in progress |
-| `hall:onboard-automaton` | light blue | Automaton onboarding in progress |
-
-`--force` updates label color and description if the label already exists.
+| `hall:onboard-invoker` | violet | Invoker onboarding in progress |
+| `hall:onboard-automaton` | violet | Automaton onboarding in progress |
+| `hall:post-mortem` | dark red | Trigger post-mortem analysis by Old Major |
 
 ---
 
-## Checklist — new org or new repo
+## Checklist — after App installation
 
-- [ ] `MockaSort-Studio/.github` repo exists with Hall templates in `ISSUE_TEMPLATE/` (repo root)
-- [ ] `scripts/setup-hall-labels.sh` run for the target repo
-- [ ] Hall GitHub App installed on the target repo (Settings → Apps → hall-of-automata → Configure)
-- [ ] Webhook relay deployed and App webhook URL set to relay endpoint
-- [ ] At least one registered invoker with quota remaining
+- [ ] Welcome issue received in `hall-of-automata`
+- [ ] At least one invoker registered ([Invoker Onboarding](invoker-onboarding.md))
+- [ ] Labels present in any target repos you want to dispatch from

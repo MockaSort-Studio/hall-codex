@@ -98,10 +98,21 @@ If you know exactly which agent you want and want to skip Old Major, apply `hall
 
 | Label | Dispatched agent |
 |-------|-----------------|
-| `hall:old-major` | Old Major (triage → routes to specialist, or direct) |
-| `hall:mergio` | Mergio (CI/CD / GitHub Actions / devops) |
+| `hall:old-major` | Old Major — triage, routing, onboarding, post-mortem |
+| `hall:hamlet` | Hamlet — C++17 & Bazel |
+| `hall:mergio` | mergio — CI/CD, GitHub Actions, infrastructure |
+| `hall:pyrate` | Captain Pyrate — Python |
+| `hall:aeeeiii` | aeeeiii — AI/ML research synthesis |
 
 Apply the label yourself via the GitHub UI or `gh issue edit --add-label`.
+
+---
+
+## Use case 5 — Post-mortem (automatic)
+
+When a dispatch fails or hits the turn cap, `hall:post-mortem` is automatically applied to the originating issue. Old Major is dispatched to analyse the failure, read the audit artifact, and — if the failure is addressable — open a PR amending the agent's persona or tool configuration.
+
+You can also apply `hall:post-mortem` manually to any issue if you want Old Major to review a past dispatch outcome.
 
 ---
 
