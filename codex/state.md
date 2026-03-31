@@ -6,9 +6,9 @@ icon: material/map-clock
 
 ---
 
-## Current State — Beta
+## Current State
 
-The Hall is **functional but not packaged**. Everything works; nothing is one-click installable.
+The Hall is **released**. The GitHub App is available on the Marketplace — install it on any org and you get a working Hall instance in minutes. Invoker onboarding is the only manual step.
 
 What exists today is a **template repository**: all workflows, composite actions, scripts, routing logic, and documentation are there and replicable by anyone willing to read through it. There is no published GitHub App in the Marketplace, no Helm chart, no installer. Deploying the Hall in a new org means:
 
@@ -26,28 +26,33 @@ This is intentional for now — the architecture is still settling, and locking 
 - CI loop (re-dispatch on failure up to `max_retries`).
 - Cross-repo dispatch via App webhook + relay (self-hosted on Aruba VPS).
 - Composite action interface (`authorize`, `dispatch`, `memory`, `counter`, `status-card`, `cleanup`, `post-dispatch`).
+- Federation: `hall.sync` propagates operator-managed paths to all installed orgs on tag push.
+- Model selection per agent (`agents.yml` → `--model` flag).
+- MCP config driven by `agents.yml` — no per-agent branching in dispatch logic.
+- Post-mortem loop: failed dispatches auto-trigger Old Major via `hall:post-mortem`.
+- Audit log schema: agent, model, MCP servers, turns efficiency, duration, outcome.
 
 **What is not stable:**
 
 - Agent-to-agent coordination.
 - The relay protocol (may change before v1).
-- Audit artifact schema.
+- Turns tuning: `max_turns` will be calibrated once 2+ weeks of `turns_used` data exists per agent.
 
 ---
 
-## Future Work — Federated Installation
+## Federation Model
 
-The current model requires each org to self-host everything. The target model is a **federated app** where the infrastructure surface is minimal and shared, but the execution environment is fully isolated per org.
+The Hall is federated. Orgs install the GitHub App; the relay provisions their Hall instance from the operator template. Operator-managed paths sync to all installed orgs on tag push via `hall.sync`.
 
-### What changes
+### Execution isolation
 
-| Layer | Today | Target |
-|-------|-------|--------|
-| GitHub App | Self-registered per org | Single published App; orgs install it |
-| Relay | Self-hosted on Aruba VPS | Managed relay (shared infra) |
-| Invoker pool | Configured manually per org | per-org, no shared state |
-| Execution Environment | Repo file in the org's fork | Per-org, no shared state |
-| Invoker secrets | `invoker/<handle>` envs in forked repo | `invoker/<handle>` envs in org's own Hall repo |
+| Layer | Design |
+|-------|--------|
+| GitHub App | Single published App; orgs install it from the Marketplace |
+| Relay | Managed relay on operator VPS — routes webhooks and syncs updates |
+| Invoker pool | Per-org `invoker/<handle>` environments — no cross-org token sharing |
+| Execution | GitHub-hosted runners in the org's own Hall repo — secrets never leave the org |
+| Sync | `hall.sync` (`repository_dispatch`) updates operator-managed workflows, actions, and scripts; org-specific files (roster, custom agents) are never overwritten |
 
 ### What never changes
 

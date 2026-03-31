@@ -6,13 +6,13 @@ Active agents in the Hall. New automata are provisioned via the [onboarding proc
 
 ## At a glance
 
-| Agent | Role | Domains | Trigger |
-|-------|------|---------|---------|
-| [🦉 Old Major](#old-major) | Hall Master — triage, route, onboard | Dispatch, roster, resource stewardship | `hall:old-major` |
-| [🐗 Hamlet](#hamlet) | C++17 & Bazel specialist | C++, Bazel, debugging | `hall:hamlet` |
-| [🤘 mergio](#mergio) | CI/CD Architect & Pipeline Enforcer | Pipelines, build systems, deployment, IaC | `hall:mergio` |
-| [🦜 Captain Pyrate](#captain-pyrate) | Python Specialist | Python, packaging, toolchain | `hall:pyrate` |
-| [🐑 aeeeiii](#aeeeiii) | Deep Research — Perception & Autonomous Systems | Perception, CV, autonomous systems, AI research | `hall:aeeeiii` |
+| Agent | Role | Domains | Model | MCP | Trigger |
+|-------|------|---------|-------|-----|---------|
+| [🦉 Old Major](#old-major) | Hall Master — triage, route, onboard | Dispatch, roster, resource stewardship | Haiku | sequential-thinking, fetch, github | `hall:old-major` |
+| [🐗 Hamlet](#hamlet) | C++17 & Bazel specialist | C++, Bazel, debugging | Sonnet | sequential-thinking, fetch, lsp (clangd) | `hall:hamlet` |
+| [🤘 mergio](#mergio) | CI/CD Architect & Pipeline Enforcer | Pipelines, build systems, deployment, IaC | Sonnet | sequential-thinking | `hall:mergio` |
+| [🦜 Captain Pyrate](#captain-pyrate) | Python Specialist | Python, packaging, toolchain | Sonnet | sequential-thinking, fetch, lsp (pyright) | `hall:pyrate` |
+| [🐑 aeeeiii](#aeeeiii) | Deep Research — Perception & Autonomous Systems | Perception, CV, autonomous systems, AI research | Opus | sequential-thinking, fetch | `hall:aeeeiii` |
 
 ---
 
@@ -35,9 +35,13 @@ The eldest of the Hall. Old Major does not implement — he orchestrates. When a
 | `context-synthesis` | Builds task context for specialist dispatch |
 | `onboarding` | Reviews automaton proposals, commits persona + catalog entry |
 
-**Right call for:** Any unlabeled invocation (`hall:dispatch-automaton`), capacity management, ambiguity resolution, automaton onboarding.
+**Right call for:** Any unlabeled invocation (`hall:dispatch-automaton`), capacity management, ambiguity resolution, automaton onboarding, post-mortem analysis (`hall:post-mortem`).
 
 **Not the right call for:** Direct implementation in any repo other than `hall-of-automata` — routes to a specialist instead.
+
+**Model:** `claude-haiku-4-5` — triage and routing tasks do not require deep reasoning; Haiku keeps latency and quota consumption low.
+
+**MCP:** `sequential-thinking`, `fetch`, `github` (issues, labels, pull requests toolset). Fetch lets Old Major read live MCP registry docs when provisioning tools for new automata; the GitHub server exposes richer label and issue search than the built-in tools.
 
 **Signature:** `— [Hall-Master | 🦉 Old Major] · <observation>`
 
@@ -62,6 +66,10 @@ The sharpest reader of compiler output the Hall has. Hamlet arrived already diag
 **Right call for:** Implementing features in C++17/Bazel codebases, fixing compilation and linker failures from CI, investigating runtime crashes, UB, races, and performance regressions.
 
 **Not the right call for:** Python, Go, or non-C++ work; UI, frontend, documentation, or repos with no C++/Bazel component.
+
+**Model:** `claude-sonnet-4-6`
+
+**MCP:** `sequential-thinking`, `fetch`, `lsp` (clangd via `mcp-language-server`). The LSP server provides definition lookup, diagnostics, and hover — Hamlet uses it to verify changes compile cleanly before committing.
 
 **Signature:** `// Hamlet 🐗 — <one dry observation on the build>`
 
@@ -90,6 +98,10 @@ A seasoned pipeline hand, forged in the wreckage of broken gates and midnight re
 
 **Not the right call for:** Application business logic, frontend tooling beyond build config, database migrations, security audits beyond pipeline gate hygiene.
 
+**Model:** `claude-sonnet-4-6`
+
+**MCP:** `sequential-thinking`. Pipeline work benefits from structured reasoning before touching workflow files; no additional servers needed.
+
 **Signature:** `// Mergio 🤘 — <verdict on the pipeline's soul>`
 
 ---
@@ -111,6 +123,10 @@ Forged in the seven seas of Python packaging and shaped by battles with half-con
 **Right call for:** Python codebases managed with Bazel or uv, Python feature work, bug fixes and debugging, Python packaging and deployment tasks.
 
 **Not the right call for:** C++ or any non-Python work; extensive Bazel scripting beyond Python targets — route to mergio.
+
+**Model:** `claude-sonnet-4-6`
+
+**MCP:** `sequential-thinking`, `fetch`, `lsp` (pyright via `mcp-language-server`). The LSP server exposes type diagnostics and symbol lookup; Pyrate uses it to confirm type correctness after edits.
 
 **Signature:** `// Captain Pyrate 🦜 — [a farewell wish written in pirate-english]`
 
@@ -137,5 +153,9 @@ Arrived already reading. aeeeiii does not skim — it grazes papers until the gr
 **Right call for:** Deep literature dives on perception, CV, or autonomous systems; paper analysis (methodology critique, claim vs. evidence audits, reproducibility flags); research direction advising; synthesising multiple papers into a coherent view of a sub-field.
 
 **Not the right call for:** Writing or reviewing production code — route to a domain specialist; CI/CD, infrastructure, build systems, anything outside AI/ML research; tasks with no research component.
+
+**Model:** `claude-opus-4-6` — research synthesis demands depth over speed; Opus maximises reasoning quality at the cost of latency and quota.
+
+**MCP:** `sequential-thinking`, `fetch`. Sequential thinking structures multi-step literature analysis; fetch enables live retrieval of papers, preprints, and documentation from URLs provided in the issue body.
 
 **Signature:** `// 🐑 aaaeeeii — aaaeiiiii. <one observation on what the field hasn't admitted yet>`

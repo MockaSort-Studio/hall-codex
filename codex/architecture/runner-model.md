@@ -9,7 +9,7 @@ icon: material/robot
 | Layer | Where it runs | What it does |
 |-------|--------------|-------------|
 | **Detect job** | GitHub-hosted runner | Thin event parsing: trigger type, actor, agent (if labeled), issue/PR number; pool-selects invoker |
-| **Dispatch job** | GitHub-hosted runner (`invoker/<handle>` env) | Persona injection, Claude Code Action, status card, counter update, audit log |
+| **Dispatch job** | GitHub-hosted runner (`invoker/<handle>` env) | MCP config build, LSP setup (if needed), persona injection, Claude Code Action, status card, counter update, post-mortem trigger (on failure), audit log |
 | **Claude inference** | Anthropic infrastructure | Language model processing; called by the Claude Code Action via OAuth token |
 
 The GitHub runner checks out the Hall repo, assembles the CLAUDE.md context file from the base contract and agent persona, and runs `anthropics/claude-code-action@v1`. The action drives the agentic loop: calling Claude, executing bash/file tools, and committing results — all on the runner.
@@ -71,12 +71,37 @@ If the pool is exhausted (all members at cap), the `invoker` output is empty, th
 
 At dispatch time, the workflow assembles the agent's operating context:
 
-1. Read `agents/automaton_base.md` from the Hall repo (checked out in the workflow)
-2. Read `roster/{agent}.md` from the Hall repo — the agent's character sheet
-3. Concatenate base contract + persona → write to `CLAUDE.md` in the workspace root
-4. Pass task context as the `prompt` input to the Claude Code Action
+1. Write a two-line `CLAUDE.md` to the workspace root using `@`-imports:
+   ```
+   @.hall/agents/automaton_base.md
+   @.hall/roster/{agent}.md
+   ```
+2. Claude Code resolves the `@`-imports at runtime from the checked-out Hall repo at `.hall/`. This means persona updates take effect on the next dispatch without touching dispatch logic.
+3. Pass task context as the `prompt` input to the Claude Code Action.
 
 `CLAUDE.md` is never committed. The runner is ephemeral — it exists only for the duration of the dispatch job. The base contract (`automaton_base.md`) explicitly prohibits the agent from committing the file.
+
+---
+
+## Model selection
+
+Each agent declares its model in `agents.yml`. The dispatch workflow reads this and passes `--model <id>` to Claude Code:
+
+| Agent | Model | Rationale |
+|-------|-------|-----------|
+| old-major | Haiku | Triage and routing — fast, low quota cost |
+| hamlet, mergio, pyrate | Sonnet | Implementation depth at reasonable cost |
+| aeeeiii | Opus | Research synthesis — quality over latency |
+
+---
+
+## MCP servers
+
+Each agent declares its MCP server set in `agents.yml`. Before dispatch, `scripts/build-mcp-config.js` reads the agent's `mcp:` block, resolves placeholders, and writes `/tmp/mcp.json`. Claude Code is launched with `--mcp-config /tmp/mcp.json --allowedTools <list>`.
+
+If an agent requires an LSP server (`runtime: go-install`), a setup script (`scripts/setup-lsp-{lang}.sh`) runs first to install the binary. LSP setup is skipped for agents that don't declare one.
+
+Adding MCP servers to an agent is a change to `agents.yml` only — no dispatch logic changes required.
 
 ---
 
@@ -86,7 +111,7 @@ The runner is ephemeral, but task state persists between runs via:
 
 - **Actions Cache:** per-task working memory (`hall-task-{repo}-{pr}`). Keyed by PR so multiple concurrent tasks on different PRs never collide. 7-day TTL; deleted on PR close by `hall-cleanup.yml`.
 - **Environment variables (`HALL_USAGE_COUNT`, `HALL_WEEKLY_CAP`):** invoker usage tracking. Written by the workflow via the GitHub API after each successful dispatch.
-- **Actions Artifacts:** immutable invocation audit logs (`hall-log-{agent}-{issue}-{run_id}`)
+- **Actions Artifacts:** immutable invocation audit logs (`hall-log-{agent}-{issue}-{run_id}.json`) — each log records agent, model, MCP servers active, turns used, turns efficiency, outcome, and wall-clock duration
 - **GitHub issue/PR thread:** permanent human-readable task history; serves as fallback context if cache expires
 - **`agents.yml` and `roster/*.md`:** live catalog and persona state, version-controlled in the Hall repo
 
