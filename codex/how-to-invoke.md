@@ -105,6 +105,8 @@ If you know exactly which agent you want and want to skip Old Major, apply `hall
 | `hall:mergio` | mergio — CI/CD, GitHub Actions, infrastructure |
 | `hall:pyrate` | Captain Pyrate — Python |
 | `hall:aeeeiii` | aeeeiii — AI/ML research synthesis |
+| `hall:frontenzo` | Frontenzo — frontend design critic & advisor |
+| `hall:tomashco` | Tomashco — backend architecture advisor |
 
 Apply the label yourself via the GitHub UI or `gh issue edit --add-label`.
 

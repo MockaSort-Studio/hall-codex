@@ -56,6 +56,8 @@ gh label clone MockaSort-Studio/hall-of-automata --repo MockaSort-Studio/my-repo
 | `hall:mergio` | purple | Thread bound to mergio |
 | `hall:pyrate` | purple | Thread bound to Captain Pyrate |
 | `hall:aeeeiii` | purple | Thread bound to aeeeiii |
+| `hall:frontenzo` | purple | Thread bound to Frontenzo |
+| `hall:tomashco` | purple | Thread bound to Tomashco |
 | `hall:awaiting-input` | yellow | Agent waiting for invoker reply |
 | `hall:queued` | red | All invoker quota exhausted |
 | `hall:invoker-queued` | red | No invoker available |
