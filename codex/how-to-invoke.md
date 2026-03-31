@@ -79,16 +79,18 @@ Use this when a PR opened by an agent needs correction after a code review.
 
 **Steps:**
 
-1. Open a **Pull Request Review** (not a plain comment) on the agent's PR.
-2. Include `@hall-of-automata <agent>` in the review body — this is required.
+1. Open a **Pull Request Review** on the agent's PR.
+2. Include `@hall-of-automata` anywhere in the review body — the agent is determined by the `hall:<agent>` label already on the PR, not by what follows the mention.
 3. Submit as **Comment** or **Request changes** — both trigger dispatch.
 
 ```
-@hall-of-automata mergio the test in src/foo_test.cpp is missing the edge case
+@hall-of-automata the test in src/foo_test.cpp is missing the edge case
 for empty input. Please add coverage.
 ```
 
 The agent is re-dispatched with your review feedback injected into its context alongside restored task memory.
+
+> **Alternative:** a plain comment on the PR (no review) also triggers re-dispatch — the `hall:<agent>` label is sufficient. Use a PR Review when you want to formally request changes; use a plain comment for a quick follow-up.
 
 ---
 
@@ -139,19 +141,19 @@ Every dispatch creates or updates a `<!-- hall-status -->` comment on the issue 
 
 - **Use the issue template.** It sets the right label and structure automatically.
 - **Reply directly on the issue** when you see `hall:awaiting-input`. Just comment — no labels needed.
-- **Use PR Reviews** (not plain PR comments) when you want to re-dispatch an agent on its PR.
+- **Use PR Reviews** when you want to formally request changes and re-dispatch — or just comment on the PR, the `hall:<agent>` label is enough to trigger either way.
 - **Specify mode** in the issue template. `advising` and `researching` get closed automatically when done.
 - **Leave labels alone.** Hall labels (`hall:*`) are the system's state machine. They are managed by the Hall.
 
 ### ❌ Don't
 
-- **Don't type `@hall-of-automata` in a plain comment hoping to trigger dispatch.** This is not how invocation works. Use labels or PR reviews.
+- **Don't type `@hall-of-automata` in a plain issue comment hoping to trigger dispatch.** On issues, only labels drive dispatch — comments only re-dispatch when the issue is already labeled `hall:<agent>`. On PRs, a plain comment on a labeled PR is enough; `@hall-of-automata` is only required in formal PR Reviews.
 - **Don't manually remove `hall:<agent>` from an issue or PR.** This breaks re-dispatch — the agent won't be found on the next comment reply or review.
 - **Don't remove `hall:awaiting-input` manually.** The Hall strips it automatically when re-dispatching. Removing it early breaks the reply path.
 - **Don't apply `hall:dispatch-automaton` to a PR.** Task routing is for issues. Use PR reviews for PR-bound work.
 - **Don't apply multiple `hall:<agent>` labels to the same issue.** Only one agent can own a thread; Old Major manages routing.
 - **Don't close an issue while an agent is working** (stage = Working / Dispatching). The agent may still push commits and open a PR.
-- **Don't comment on a PR to re-dispatch.** Plain PR comments are only processed in awaiting-input state. Use a PR Review instead.
+- **Don't manually remove `hall:<agent>` from a PR.** Re-dispatch on plain PR comments and PR reviews both rely on this label being present.
 
 ---
 
@@ -169,7 +171,8 @@ If all invokers are at cap, the issue is labeled `hall:invoker-queued` and a com
 |----------|--------|
 | New task (any kind) | Open issue from **Automaton Task** template |
 | Agent asked a question | Reply on the issue thread |
-| Review agent's PR | Submit a **PR Review** (include `@hall-of-automata` in body) |
+| Follow up on agent's PR | Comment on the PR — label is enough, no mention needed |
+| Formally request changes on agent's PR | Submit a **PR Review** with `@hall-of-automata` in the body |
 | Want a specific agent | Apply `hall:<agent>` label to the issue |
 | Quota exhausted | Wait for Monday reset or ask an invoker to register |
 | Something went wrong | Check the status card stage and workflow run link |
